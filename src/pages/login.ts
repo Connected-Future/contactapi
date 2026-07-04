@@ -45,11 +45,29 @@ export const loginPage = /* html */ `<!doctype html>
     <input id="password" type="password" required placeholder="••••••••" autocomplete="current-password" />
     <button type="submit">Log in</button>
   </form>
+  <p id="error" style="color:#c00;font-size:13px;margin-top:12px;display:none"></p>
   <p class="alt">Don't have an account? <a href="/signup">Sign up</a></p>
-<script>
-  // UI only for now, no auth wired up yet.
-  document.getElementById('loginForm').addEventListener('submit', (e) => {
+<script type="module">
+  const form = document.getElementById('loginForm');
+  const errEl = document.getElementById('error');
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    errEl.style.display = 'none';
+    const res = await fetch('/api/auth/sign-in/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value,
+      }),
+    });
+    if (res.ok) {
+      location.href = '/dashboard';
+    } else {
+      const body = await res.json().catch(() => ({}));
+      errEl.textContent = body?.message || 'Invalid email or password.';
+      errEl.style.display = 'block';
+    }
   });
 </script>
 </body>

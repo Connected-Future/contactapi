@@ -49,11 +49,30 @@ export const signupPage = /* html */ `<!doctype html>
     <p class="hint">At least 8 characters.</p>
     <button type="submit">Create account</button>
   </form>
+  <p id="error" style="color:#c00;font-size:13px;margin-top:12px;display:none"></p>
   <p class="alt">Already have an account? <a href="/login">Log in</a></p>
-<script>
-  // UI only for now, no auth wired up yet.
-  document.getElementById('signupForm').addEventListener('submit', (e) => {
+<script type="module">
+  const form = document.getElementById('signupForm');
+  const errEl = document.getElementById('error');
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    errEl.style.display = 'none';
+    const res = await fetch('/api/auth/sign-up/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value,
+      }),
+    });
+    if (res.ok) {
+      location.href = '/dashboard';
+    } else {
+      const body = await res.json().catch(() => ({}));
+      errEl.textContent = body?.message || 'Could not create account.';
+      errEl.style.display = 'block';
+    }
   });
 </script>
 </body>

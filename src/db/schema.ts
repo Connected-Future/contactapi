@@ -7,17 +7,12 @@ import {
   index,
 } from 'drizzle-orm/pg-core'
 import { newId } from './ids.js'
+import { user } from './auth-schema.js'
 
-// Accounts. Created from the signup form (name, email, password); email is the
-// login identity. Passwords are only ever stored hashed.
-export const users = pgTable('users', {
-  id: text('id').primaryKey().$defaultFn(() => newId('usr')),
-  name: text('name').notNull(),
-  email: text('email').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-})
+// Accounts, sessions and credentials live in `auth-schema.ts` — Better Auth
+// owns them. Re-exported here so `import * as schema` (and drizzle-kit) see the
+// full set in one place.
+export * from './auth-schema.js'
 
 // Bearer API keys. Two types: `secret` (ck_secret_…, full access) and
 // `publishable` (ck_pub_…, create-only, locked to allowed_domains). The raw
@@ -28,7 +23,7 @@ export const apiKeys = pgTable(
     id: text('id').primaryKey().$defaultFn(() => newId('key')),
     userId: text('user_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     type: text('type', { enum: ['secret', 'publishable'] }).notNull(),
     keyHash: text('key_hash').notNull().unique(),
     keyPrefix: text('key_prefix').notNull(),
@@ -53,7 +48,7 @@ export const contacts = pgTable(
     id: text('id').primaryKey().$defaultFn(() => newId('con')),
     userId: text('user_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     email: text('email').notNull(),
     data: jsonb('data').$type<Record<string, unknown>>().notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -65,6 +60,6 @@ export const contacts = pgTable(
   ],
 )
 
-export type User = typeof users.$inferSelect
+// `User` is re-exported from ./auth-schema via `export *` above.
 export type ApiKey = typeof apiKeys.$inferSelect
 export type Contact = typeof contacts.$inferSelect
