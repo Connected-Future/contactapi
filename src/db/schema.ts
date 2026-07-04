@@ -15,8 +15,9 @@ import { user } from './auth-schema.js'
 export * from './auth-schema.js'
 
 // Bearer API keys. Two types: `secret` (ck_secret_…, full access) and
-// `publishable` (ck_pub_…, create-only, locked to allowed_domains). The raw
-// token is shown once at creation; only its SHA-256 hash is persisted.
+// `publishable` (ck_pub_…, create-only, locked to allowed_domains). Auth lookups
+// use the SHA-256 `key_hash`; the raw token is also kept encrypted-at-rest in
+// `key_encrypted` so the owner can reveal it from the dashboard at any time.
 export const apiKeys = pgTable(
   'api_keys',
   {
@@ -26,6 +27,9 @@ export const apiKeys = pgTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     type: text('type', { enum: ['secret', 'publishable'] }).notNull(),
     keyHash: text('key_hash').notNull().unique(),
+    // AES-256-GCM ciphertext of the raw `ck_…` token (see db/keycrypto.ts).
+    // Nullable only for legacy hash-only rows; new keys always set it.
+    keyEncrypted: text('key_encrypted'),
     keyPrefix: text('key_prefix').notNull(),
     allowedDomains: jsonb('allowed_domains')
       .$type<string[]>()

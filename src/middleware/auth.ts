@@ -18,8 +18,9 @@ export type AppEnv = {
   }
 }
 
-// SHA-256 hex of a raw token. We only ever store/compare hashes, never the
-// plaintext `ck_…` value.
+// SHA-256 hex of a raw token — the value auth lookups compare against. The raw
+// `ck_…` value is never stored in plaintext; it's kept as AES-GCM ciphertext
+// (db/keycrypto.ts) purely so owners can reveal it from the dashboard.
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }

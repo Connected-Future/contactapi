@@ -3,14 +3,10 @@ import { and, count, desc, eq } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { apiKeys, contacts } from '../db/schema.js'
 import { requireSession } from '../middleware/session.js'
-import { hashToken, type AppEnv } from '../middleware/auth.js'
-import { rawId } from '../db/ids.js'
-import {
-  dashboardHome,
-  keysPage,
-  keyCreatedPage,
-  contactsPage,
-} from '../pages/dashboard.js'
+import { type AppEnv } from '../middleware/auth.js'
+import { mintApiKey } from '../api-keys.js'
+import { decryptKey } from '../db/keycrypto.js'
+import { dashboardHome, keysPage, contactsPage } from '../pages/dashboard.js'
 
 export const dashboardRoutes = new Hono<AppEnv>()
 
@@ -34,7 +30,8 @@ dashboardRoutes.get('/keys', async (c) => {
     .from(apiKeys)
     .where(eq(apiKeys.userId, c.get('userId')))
     .orderBy(desc(apiKeys.createdAt))
-  return c.html(keysPage(c.get('sessionUser').name, rows))
+  const createdId = c.req.query('created') ?? null
+  return c.html(keysPage(c.get('sessionUser').name, rows, createdId))
 })
 
 dashboardRoutes.post('/keys', async (c) => {
@@ -49,19 +46,24 @@ dashboardRoutes.post('/keys', async (c) => {
           .filter(Boolean)
       : []
 
-  // Raw token: ck_<secret|pub>_<random>. Shown once; only its hash is stored.
-  const token = `ck_${type === 'secret' ? 'secret' : 'pub'}_${rawId()}${rawId()}${rawId()}`
-  const keyPrefix = `${token.slice(0, type === 'secret' ? 12 : 9)}…${token.slice(-4)}`
+  // Keys are viewable afterwards (stored encrypted), so just drop back to the
+  // list with the new one highlighted rather than a one-time reveal page.
+  const { row } = await mintApiKey({ userId: c.get('userId'), type, allowedDomains })
+  return c.redirect(`/dashboard/keys?created=${row.id}`)
+})
 
-  await db.insert(apiKeys).values({
-    userId: c.get('userId'),
-    type,
-    keyHash: hashToken(token),
-    keyPrefix,
-    allowedDomains,
-  })
-
-  return c.html(keyCreatedPage(c.get('sessionUser').name, token))
+// Reveal a single key's raw value to its signed-in owner (fetched on demand by
+// the dashboard's "Reveal"/"Copy" buttons; the value never ships in page HTML).
+dashboardRoutes.post('/keys/:id/reveal', async (c) => {
+  const [key] = await db
+    .select()
+    .from(apiKeys)
+    .where(and(eq(apiKeys.userId, c.get('userId')), eq(apiKeys.id, c.req.param('id'))))
+    .limit(1)
+  if (!key || !key.keyEncrypted) {
+    return c.json({ error: 'Key not found.' }, 404)
+  }
+  return c.json({ key: decryptKey(key.keyEncrypted) })
 })
 
 dashboardRoutes.post('/keys/:id/revoke', async (c) => {

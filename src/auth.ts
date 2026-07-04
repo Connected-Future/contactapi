@@ -3,6 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { db } from './db/client.js'
 import { user, session, account, verification } from './db/auth-schema.js'
 import { newId, type IdPrefix } from './db/ids.js'
+import { mintApiKey } from './api-keys.js'
 
 // Prefix the id of each auth table to match the rest of the codebase
 // (usr_… / ses_… / acc_… / ver_…), instead of Better Auth's opaque default.
@@ -31,6 +32,20 @@ export const auth = betterAuth({
   advanced: {
     database: {
       generateId: ({ model }) => newId(ID_PREFIX[model] ?? 'usr'),
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        // Seed every new account with a working pair out of the box: a secret
+        // key for server-side use and an (unrestricted) publishable key for the
+        // browser. Both are revealable from the dashboard; users can mint more
+        // later, e.g. publishable keys locked to specific domains.
+        after: async (createdUser) => {
+          await mintApiKey({ userId: createdUser.id, type: 'secret' })
+          await mintApiKey({ userId: createdUser.id, type: 'publishable' })
+        },
+      },
     },
   },
 })
