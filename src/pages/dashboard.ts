@@ -109,8 +109,12 @@ function shell(title: string, active: string, name: string, inner: string): stri
 <script type="module">
   document.getElementById('logout')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    await fetch('/api/auth/sign-out', { method: 'POST' });
-    location.href = '/login';
+    try {
+      await fetch('/api/auth/sign-out', { method: 'POST' });
+    } finally {
+      // replace() so the (now signed-out) dashboard can't be reached via Back.
+      location.replace('/login');
+    }
   });
 </script>
 </body>

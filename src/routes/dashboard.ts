@@ -14,6 +14,14 @@ export const dashboardRoutes = new Hono<AppEnv>()
 // Everything under /dashboard requires a logged-in browser session.
 dashboardRoutes.use('*', requireSession)
 
+// Authenticated pages must never be cached. Without this, the browser (and the
+// Back button's bfcache) can redisplay the logged-in dashboard after sign-out,
+// making it look like logout didn't work even though the session is gone.
+dashboardRoutes.use('*', async (c, next) => {
+  c.header('Cache-Control', 'no-store, max-age=0')
+  await next()
+})
+
 // ── Overview ─────────────────────────────────────────────────────────────────
 dashboardRoutes.get('/', async (c) => {
   const userId = c.get('userId')
