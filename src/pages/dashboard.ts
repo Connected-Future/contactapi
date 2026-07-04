@@ -1,5 +1,5 @@
 import { baseStyle } from '../styles.js'
-import type { ApiKey, Contact } from '../db/schema.js'
+import type { ApiKey } from '../db/schema.js'
 
 // Minimal HTML escaping for any value that originates from user input
 // (names, emails, contact fields) before it lands in markup.
@@ -50,6 +50,39 @@ const dashStyle = /* css */ `
   .token { display: block; background: #1a1a1a; color: #7dd3fc; padding: 14px 16px; border-radius: 8px; font-family: ui-monospace, Menlo, monospace; font-size: 14px; word-break: break-all; margin: 12px 0; }
   .warn { background: #fffbe6; border: 1px solid #f5e08a; border-radius: 8px; padding: 12px 14px; font-size: 14px; }
   .empty { color: #888; font-size: 14px; padding: 20px 0; }
+
+  /* Contacts toolbar: search on the left, "New contact" on the right. */
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; flex-wrap: wrap; }
+  .search { display: flex; gap: 8px; align-items: center; }
+  .search input[type=search] { padding: 8px 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; width: 240px; }
+  .search button.ghost { color: #444; }
+  .search .clear { font-size: 13px; }
+  tr.contact { cursor: pointer; }
+  tr.contact:hover td { background: #f7f9ff; }
+  .pagination { display: flex; align-items: center; gap: 14px; font-size: 13px; color: #666; margin: 4px 0 24px; }
+  .pagination a { padding: 6px 12px; border: 1px solid #ddd; border-radius: 6px; text-decoration: none; color: #1a1a1a; }
+  .pagination a:hover { background: #fafafa; }
+  .pagination .disabled { padding: 6px 12px; border: 1px solid #f0f0f0; border-radius: 6px; color: #bbb; }
+
+  /* Row-detail drawer ("sheet"). */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.28); opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 40; }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+  .drawer { position: fixed; top: 0; right: 0; height: 100%; width: min(460px, 100%); background: #fff; box-shadow: -8px 0 24px rgba(0,0,0,.12);
+    transform: translateX(100%); transition: transform .2s ease; z-index: 41; display: flex; flex-direction: column; }
+  .drawer.open { transform: translateX(0); }
+  .drawer .dhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px; border-bottom: 1px solid #eee; }
+  .drawer .dhead h2 { font-size: 16px; margin: 0; word-break: break-all; }
+  .drawer .dbody { padding: 18px 20px; overflow-y: auto; flex: 1; }
+  .drawer .dfoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 20px; border-top: 1px solid #eee; }
+  .drawer label.field { display: block; font-size: 13px; color: #444; margin: 0 0 14px; }
+  .drawer label.field span { display: block; margin-bottom: 5px; font-weight: 600; }
+  .drawer input[type=email], .drawer input[type=text] { width: 100%; padding: 8px 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; }
+  .drawer textarea { width: 100%; min-height: 200px; padding: 10px; font-size: 13px; font-family: ui-monospace, Menlo, monospace; border: 1px solid #ccc; border-radius: 6px; resize: vertical; }
+  .drawer .meta { font-size: 12px; color: #888; margin-top: 8px; line-height: 1.7; }
+  .drawer .meta code { background: #f5f5f5; padding: 1px 5px; border-radius: 4px; }
+  .drawer .err { color: #a22; font-size: 13px; margin: 0 0 12px; min-height: 1px; }
+  .close { background: none; border: 0; font-size: 22px; line-height: 1; color: #888; cursor: pointer; padding: 0 4px; }
+  .close:hover { color: #333; }
 `
 
 function shell(title: string, active: string, name: string, inner: string): string {
@@ -210,31 +243,215 @@ export function keysPage(name: string, keys: ApiKey[], createdId: string | null 
   `)
 }
 
-export function contactsPage(name: string, contacts: Contact[]): string {
+// Shape the contacts route serializes each row into for the dashboard.
+export type ContactView = {
+  id: string
+  email: string
+  fields: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export type ContactsView = {
+  contacts: ContactView[]
+  page: number
+  total: number
+  totalPages: number
+  pageSize: number
+  q: string
+}
+
+// One-line preview of a contact's non-reserved fields for the table.
+function fieldsSummary(fields: Record<string, unknown>): string {
+  const parts = Object.entries(fields).map(([k, v]) => {
+    const val = v === null || typeof v === 'object' ? JSON.stringify(v) : String(v)
+    return `${k}=${val}`
+  })
+  const joined = parts.join(', ')
+  return joined.length > 80 ? `${joined.slice(0, 79)}…` : joined
+}
+
+export function contactsPage(name: string, view: ContactsView): string {
+  const { contacts, page, total, totalPages, pageSize, q } = view
+
   const rows = contacts.length
     ? contacts
-        .map((row) => {
-          const data = row.data as Record<string, unknown>
-          const fields = Object.entries(data)
-            .filter(([k]) => !['id', 'email', 'created_at', 'updated_at'].includes(k))
-            .map(([k, v]) => `${esc(k)}=${esc(v)}`)
-            .join(', ')
-          return `<tr>
-            <td><code>${esc(row.id)}</code></td>
+        .map(
+          (row) => `<tr class="contact" data-id="${esc(row.id)}">
             <td>${esc(row.email)}</td>
-            <td class="muted">${fields || '—'}</td>
-            <td>${iso(row.createdAt)}</td>
-          </tr>`
-        })
+            <td class="muted">${esc(fieldsSummary(row.fields)) || '—'}</td>
+            <td>${esc(row.created_at)}</td>
+          </tr>`,
+        )
         .join('')
-    : `<tr><td colspan="4" class="empty">No contacts yet. Create some via <code>POST /v1/contacts</code>.</td></tr>`
+    : `<tr><td colspan="3" class="empty">${
+        q ? `No contacts match “${esc(q)}”.` : 'No contacts yet — create one, or POST to <code>/v1/contacts</code>.'
+      }</td></tr>`
+
+  // Preserve the active search term across page links.
+  const qs = (p: number) => {
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    if (p > 1) params.set('page', String(p))
+    const s = params.toString()
+    return s ? `/dashboard/contacts?${s}` : '/dashboard/contacts'
+  }
+  const prev = page > 1
+    ? `<a href="${qs(page - 1)}">← Prev</a>`
+    : `<span class="disabled">← Prev</span>`
+  const next = page < totalPages
+    ? `<a href="${qs(page + 1)}">Next →</a>`
+    : `<span class="disabled">Next →</span>`
+
+  const rangeStart = total === 0 ? 0 : (page - 1) * pageSize + 1
+  const rangeEnd = Math.min(page * pageSize, total)
+
+  const clear = q
+    ? `<a class="clear muted" href="/dashboard/contacts">Clear</a>`
+    : ''
+
+  // Embed the current page's contacts so the drawer can open instantly. Escape
+  // "<" so the payload can't break out of the <script> element.
+  const payload = JSON.stringify(contacts).replaceAll('<', '\\u003c')
 
   return shell('Contacts · contactapi', '/dashboard/contacts', name, /* html */ `
     <h1>Contacts</h1>
-    <p class="muted">The 50 most recent contacts on your account.</p>
+    <p class="muted">${total} contact${total === 1 ? '' : 's'} on your account. Click a row to view, edit, or delete it.</p>
+
+    <div class="toolbar">
+      <form class="search" method="get" action="/dashboard/contacts">
+        <input type="search" name="q" value="${esc(q)}" placeholder="Search by email…" />
+        <button class="ghost" type="submit">Search</button>
+        ${clear}
+      </form>
+      <button type="button" id="newContact">+ New contact</button>
+    </div>
+
     <table>
-      <thead><tr><th>ID</th><th>Email</th><th>Fields</th><th>Created</th></tr></thead>
+      <thead><tr><th>Email</th><th>Fields</th><th>Created</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
+
+    <div class="pagination">
+      ${prev}
+      <span>${total === 0 ? '0 of 0' : `${rangeStart}–${rangeEnd} of ${total}`}</span>
+      ${next}
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+    <aside class="drawer" id="drawer" aria-hidden="true">
+      <div class="dhead">
+        <h2 id="drawerTitle">Contact</h2>
+        <button type="button" class="close" id="drawerClose" aria-label="Close">×</button>
+      </div>
+      <div class="dbody">
+        <p class="err" id="drawerErr"></p>
+        <label class="field"><span>Email</span>
+          <input type="email" id="fEmail" placeholder="jane@example.com" />
+        </label>
+        <label class="field"><span>Fields (JSON)</span>
+          <textarea id="fFields" spellcheck="false">{}</textarea>
+        </label>
+        <div class="meta" id="drawerMeta"></div>
+      </div>
+      <div class="dfoot">
+        <button type="button" class="ghost" id="drawerDelete">Delete</button>
+        <button type="button" id="drawerSave">Save</button>
+      </div>
+    </aside>
+
+    <script type="application/json" id="contactsData">${payload}</script>
+    <script type="module">
+      const rows = JSON.parse(document.getElementById('contactsData').textContent);
+      const byId = new Map(rows.map((r) => [r.id, r]));
+
+      const overlay = document.getElementById('overlay');
+      const drawer = document.getElementById('drawer');
+      const title = document.getElementById('drawerTitle');
+      const err = document.getElementById('drawerErr');
+      const emailEl = document.getElementById('fEmail');
+      const fieldsEl = document.getElementById('fFields');
+      const metaEl = document.getElementById('drawerMeta');
+      const delBtn = document.getElementById('drawerDelete');
+      const saveBtn = document.getElementById('drawerSave');
+
+      let currentId = null; // null = create mode
+
+      function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+
+      function open(id) {
+        currentId = id;
+        err.textContent = '';
+        const c = id ? byId.get(id) : null;
+        if (c) {
+          title.textContent = c.email;
+          emailEl.value = c.email;
+          fieldsEl.value = JSON.stringify(c.fields ?? {}, null, 2);
+          metaEl.innerHTML = 'ID <code>' + esc(c.id) + '</code><br>Created ' + esc(c.created_at) + '<br>Updated ' + esc(c.updated_at);
+          delBtn.style.display = '';
+        } else {
+          title.textContent = 'New contact';
+          emailEl.value = '';
+          fieldsEl.value = '{}';
+          metaEl.innerHTML = '';
+          delBtn.style.display = 'none';
+        }
+        overlay.classList.add('open');
+        drawer.classList.add('open');
+        drawer.setAttribute('aria-hidden', 'false');
+        emailEl.focus();
+      }
+
+      function close() {
+        overlay.classList.remove('open');
+        drawer.classList.remove('open');
+        drawer.setAttribute('aria-hidden', 'true');
+      }
+
+      document.querySelectorAll('tr.contact').forEach((tr) => {
+        tr.addEventListener('click', () => open(tr.dataset.id));
+      });
+      document.getElementById('newContact').addEventListener('click', () => open(null));
+      document.getElementById('drawerClose').addEventListener('click', close);
+      overlay.addEventListener('click', close);
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+
+      saveBtn.addEventListener('click', async () => {
+        err.textContent = '';
+        const email = emailEl.value.trim();
+        if (!email) { err.textContent = 'Email is required.'; return; }
+        let fields;
+        try { fields = fieldsEl.value.trim() ? JSON.parse(fieldsEl.value) : {}; }
+        catch { err.textContent = 'Fields must be valid JSON.'; return; }
+        if (typeof fields !== 'object' || fields === null || Array.isArray(fields)) {
+          err.textContent = 'Fields must be a JSON object.'; return;
+        }
+        saveBtn.disabled = true;
+        try {
+          const url = currentId ? '/dashboard/contacts/' + currentId : '/dashboard/contacts';
+          const res = await fetch(url, {
+            method: currentId ? 'PATCH' : 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ email, fields }),
+          });
+          if (res.ok) { location.reload(); return; }
+          const body = await res.json().catch(() => ({}));
+          err.textContent = body.error || 'Could not save contact.';
+        } catch { err.textContent = 'Network error — try again.'; }
+        finally { saveBtn.disabled = false; }
+      });
+
+      delBtn.addEventListener('click', async () => {
+        if (!currentId) return;
+        if (!confirm('Delete this contact? This cannot be undone.')) return;
+        delBtn.disabled = true;
+        try {
+          const res = await fetch('/dashboard/contacts/' + currentId, { method: 'DELETE' });
+          if (res.ok) { location.reload(); return; }
+          err.textContent = 'Could not delete contact.';
+        } catch { err.textContent = 'Network error — try again.'; }
+        finally { delBtn.disabled = false; }
+      });
+    </script>
   `)
 }
