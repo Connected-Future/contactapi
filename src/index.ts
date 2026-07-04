@@ -4,6 +4,7 @@ import { HTTPException } from 'hono/http-exception'
 import { homePage } from './pages/home.js'
 import { loginPage } from './pages/login.js'
 import { signupPage } from './pages/signup.js'
+import { blogIndexPage, renderPost } from './pages/blog.js'
 import { llmsTxt } from './content/llms.js'
 import { contactsRoutes } from './routes/contacts.js'
 import { dashboardRoutes } from './routes/dashboard.js'
@@ -30,6 +31,11 @@ app.use(
 app.get('/', (c) => c.html(homePage))
 app.get('/login', (c) => c.html(loginPage))
 app.get('/signup', (c) => c.html(signupPage))
+app.get('/blog', (c) => c.html(blogIndexPage()))
+app.get('/blog/:slug', (c) => {
+  const html = renderPost(c.req.param('slug'))
+  return html ? c.html(html) : c.notFound()
+})
 app.get('/llms.txt', (c) => c.text(llmsTxt))
 
 // Throttle auth (signup/login/sign-out) per IP to blunt credential brute-force.

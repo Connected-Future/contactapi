@@ -23,7 +23,14 @@ export const homePage = /* html */ `<!doctype html>
   }
   .btn:hover { background: #333; }
   .cta { display: flex; align-items: center; gap: 14px; }
-  .cta a.txt { font-size: 15px; color: #666; white-space: nowrap; }
+  .cta a.txt, .cta button.txt { font-size: 15px; color: #666; white-space: nowrap; }
+  button.txt { background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; }
+  button.txt:hover { color: #1a1a1a; }
+
+  .docs-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .docs-head h2 { margin-bottom: 0; }
+  .linkbtn { background: none; border: none; padding: 0; font: inherit; font-size: 15px; color: #2563eb; cursor: pointer; white-space: nowrap; }
+  .linkbtn:hover { text-decoration: underline; }
 
   .endpoint { border: 1px solid #e5e5e5; border-radius: 8px; margin: 16px 0; overflow: hidden; }
   .ep-head { display: flex; align-items: center; gap: 10px; padding: 11px 14px; background: #fafafa; cursor: pointer; list-style: none; }
@@ -44,6 +51,19 @@ export const homePage = /* html */ `<!doctype html>
   table.params td:first-child { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
   .req { color: #dc2626; font-size: 12px; }
   .opt { color: #999; font-size: 12px; }
+  .uses { padding-left: 20px; margin: 0 0 16px; }
+  .uses li { margin: 0 0 6px; }
+
+  dialog { border: none; border-radius: 10px; padding: 0; max-width: 560px; width: calc(100% - 32px); color: #1a1a1a; box-shadow: 0 12px 44px rgba(0, 0, 0, .18); }
+  dialog::backdrop { background: rgba(0, 0, 0, .4); }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid #eee; }
+  .modal-head h2 { margin: 0; font-size: 18px; }
+  .modal-close { background: none; border: none; font-size: 22px; line-height: 1; color: #999; cursor: pointer; }
+  .modal-close:hover { color: #1a1a1a; }
+  .modal-body { padding: 20px; }
+  .modal-body > :first-child { margin-top: 0; }
+  .modal-body h2 { margin-top: 24px; font-size: 15px; }
+
   footer { margin-top: 56px; font-size: 13px; color: #888; }
 </style>
 </head>
@@ -51,14 +71,18 @@ export const homePage = /* html */ `<!doctype html>
   <div class="topbar">
     <h1>ContactAPI</h1>
     <div class="cta">
-      <a class="txt" href="#mcp">MCP</a>
+      <button type="button" class="txt" data-modal="mcp-modal">MCP</button>
+      <a class="txt" href="/blog">Blog</a>
       <a class="txt" href="/llms.txt">llms.txt</a>
       <a class="btn" href="/login">Get API key</a>
     </div>
   </div>
   <p class="muted" style="margin-top:8px">An open-source API to save contacts. Send a POST with an email and any other fields you want, and they get saved as-is.</p>
 
-  <h2>Endpoints</h2>
+  <div class="docs-head">
+    <h2>Endpoints</h2>
+    <button type="button" class="linkbtn" data-modal="auth-modal">Authentication</button>
+  </div>
 
   <details class="endpoint">
     <summary class="ep-head">
@@ -177,26 +201,70 @@ export const homePage = /* html */ `<!doctype html>
     </div>
   </details>
 
-  <h2>Authentication</h2>
-  <p class="muted">The base URL is <code>https://contactapi.dev</code> and every request carries your key in a header.</p>
-  <pre><code>Authorization: Bearer YOUR_KEY</code></pre>
-  <table class="params">
-    <tr><td><code>ck_secret_…</code></td><td>Use this on your backend. It has full access to every endpoint above.</td></tr>
-    <tr><td><code>ck_pub_…</code></td><td>Use this in a browser. It can only create contacts and is locked to your domains.</td></tr>
-  </table>
-
-  <h2 id="mcp">MCP server</h2>
-  <p class="muted">AI clients — Claude Desktop, claude.ai custom connectors, Cursor, the MCP Inspector — can manage your contacts as tools over a <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server.</p>
-  <pre><code>https://contactapi.dev/mcp</code></pre>
-  <p class="ep-desc" style="margin:14px 0">Auth is <strong>OAuth 2.1 with dynamic client registration</strong>, not an API key: point a client at the URL and it discovers the authorization server, registers itself, and sends you to log in and approve access. Every tool is scoped to the account you log in as.</p>
-  <table class="params">
-    <tr><td><code>list_contacts</code></td><td>List your contacts, newest first. Params: <code>page</code>, <code>page_size</code>.</td></tr>
-    <tr><td><code>get_contact</code></td><td>Fetch one contact. Params: <code>id</code>.</td></tr>
-    <tr><td><code>create_contact</code></td><td>Create or upsert by email. Params: <code>email</code>, <code>fields</code>.</td></tr>
-    <tr><td><code>update_contact</code></td><td>Partial update, merged into existing fields. Params: <code>id</code>, <code>email</code>, <code>fields</code>.</td></tr>
-    <tr><td><code>delete_contact</code></td><td>Delete one contact. Params: <code>id</code>.</td></tr>
-  </table>
+  <h2>Use cases</h2>
+  <p class="muted">Common ways people put ContactAPI to work. Each one is a short walkthrough.</p>
+  <ul class="uses">
+    <li><a href="/blog/store-contact-form-submissions-without-backend">Store contact form submissions without a backend</a></li>
+    <li><a href="/blog/build-a-waitlist-with-a-contacts-api">Build a waitlist</a></li>
+    <li><a href="/blog/give-claude-chatgpt-access-to-your-contacts-mcp">Give Claude and ChatGPT access to your contacts</a></li>
+    <li><a href="/blog/add-contact-management-to-nextjs">Add contact management to a Next.js app</a></li>
+    <li><a href="/blog/manage-newsletter-subscribers-rest-api">Manage newsletter subscribers</a></li>
+  </ul>
 
   <footer>Open source · MIT licensed · <a href="https://github.com/Connected-Future/contactapi">GitHub</a></footer>
+
+  <dialog id="auth-modal">
+    <div class="modal-head">
+      <h2>Authentication</h2>
+      <button type="button" class="modal-close" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted">The base URL is <code>https://contactapi.dev</code> and every request carries your key in a header.</p>
+      <pre><code>Authorization: Bearer YOUR_KEY</code></pre>
+      <table class="params">
+        <tr><td><code>ck_secret_…</code></td><td>Use this on your backend. It has full access to every endpoint.</td></tr>
+        <tr><td><code>ck_pub_…</code></td><td>Use this in a browser. It can only create contacts and is locked to your domains.</td></tr>
+      </table>
+    </div>
+  </dialog>
+
+  <dialog id="mcp-modal">
+    <div class="modal-head">
+      <h2>MCP server</h2>
+      <button type="button" class="modal-close" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted">AI clients like Claude Desktop, claude.ai custom connectors, Cursor, and the MCP Inspector can manage your contacts as tools over a <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server.</p>
+      <pre><code>https://contactapi.dev/mcp</code></pre>
+      <p class="ep-desc" style="margin:14px 0">Auth is <strong>OAuth 2.1 with dynamic client registration</strong> rather than an API key. Point a client at the URL and it discovers the authorization server, registers itself, and sends you to log in and approve access. Every tool is scoped to the account you log in as.</p>
+      <table class="params">
+        <tr><td><code>list_contacts</code></td><td>List your contacts, newest first. Params: <code>page</code>, <code>page_size</code>.</td></tr>
+        <tr><td><code>get_contact</code></td><td>Fetch one contact. Params: <code>id</code>.</td></tr>
+        <tr><td><code>create_contact</code></td><td>Create or upsert by email. Params: <code>email</code>, <code>fields</code>.</td></tr>
+        <tr><td><code>update_contact</code></td><td>Partial update, merged into existing fields. Params: <code>id</code>, <code>email</code>, <code>fields</code>.</td></tr>
+        <tr><td><code>delete_contact</code></td><td>Delete one contact. Params: <code>id</code>.</td></tr>
+      </table>
+    </div>
+  </dialog>
+
+  <script>
+    document.querySelectorAll('[data-modal]').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.preventDefault()
+        var d = document.getElementById(el.getAttribute('data-modal'))
+        if (d && d.showModal) d.showModal()
+      })
+    })
+    document.querySelectorAll('dialog .modal-close').forEach(function (btn) {
+      btn.addEventListener('click', function () { btn.closest('dialog').close() })
+    })
+    document.querySelectorAll('dialog').forEach(function (d) {
+      d.addEventListener('click', function (e) { if (e.target === d) d.close() })
+    })
+    if (location.hash === '#mcp') {
+      var m = document.getElementById('mcp-modal')
+      if (m && m.showModal) m.showModal()
+    }
+  </script>
 </body>
 </html>`
