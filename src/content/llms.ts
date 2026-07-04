@@ -196,6 +196,6 @@ Common status codes:
 
 ## Optional
 
-- [GitHub repository](https://github.com/Connected-Future/contactapi): Source code, MIT licensed.
+- [GitHub repository](https://github.com/kozmos-tech/contactapi): Source code, MIT licensed.
 - [Get an API key](https://contactapi.dev/login): Log in to obtain your key.
 `

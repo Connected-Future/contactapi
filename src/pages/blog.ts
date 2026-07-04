@@ -96,7 +96,7 @@ export function blogIndexPage(): string {
   </div>
   <p class="muted" style="margin-top:8px">Guides and comparisons for storing and managing contacts with an API.</p>
   ${sections}
-  <footer>Open source · MIT licensed · <a href="https://github.com/Connected-Future/contactapi">GitHub</a></footer>`
+  <footer>Open source · MIT licensed · <a href="https://github.com/kozmos-tech/contactapi">GitHub</a></footer>`
 
   return layout({
     title: 'Blog · ContactAPI',
@@ -116,7 +116,7 @@ export function renderPost(slug: string): string | null {
   <h1>${esc(post.title)}</h1>
   <p class="post-meta">${post.category} · ${formatDate(post.date)}</p>
   <div class="post-body">${post.body}</div>
-  <footer>Open source · MIT licensed · <a href="https://github.com/Connected-Future/contactapi">GitHub</a></footer>`
+  <footer>Open source · MIT licensed · <a href="https://github.com/kozmos-tech/contactapi">GitHub</a></footer>`
 
   return layout({
     title: `${post.title} · ContactAPI`,
