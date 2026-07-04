@@ -117,14 +117,32 @@ const page = /* html */ `<!doctype html>
       <span class="keytag">secret</span>
     </summary>
     <div class="ep-body">
-      <p class="ep-desc">List your contacts, newest first.</p>
+      <p class="ep-desc">List your contacts, sorted by <code>created_at</code>, newest first.</p>
+      <div class="label">Query</div>
+      <table class="params">
+        <tr><td>page</td><td><span class="opt">optional</span></td><td>Which page to return, starting at 1. Defaults to 1.</td></tr>
+        <tr><td>page_size</td><td><span class="opt">optional</span></td><td>How many contacts per page, 1–100. Defaults to 20.</td></tr>
+      </table>
+      <div class="label">Request</div>
+      <pre><code>GET /v1/contacts?page=1&amp;page_size=20</code></pre>
       <div class="label">Response 200</div>
       <pre><code>{
   "data": [
-    { "id": "con_a1b2", "email": "ada@example.com", "name": "Ada" }
+    {
+      "id": "con_a1b2",
+      "email": "ada@example.com",
+      "name": "Ada",
+      "plan": "pro",
+      "created_at": "2026-07-04T10:00:00Z",
+      "updated_at": "2026-07-04T10:00:00Z"
+    }
   ],
-  "has_more": false
+  "page": 1,
+  "page_size": 20,
+  "total": 137,
+  "total_pages": 7
 }</code></pre>
+      <p class="ep-desc" style="margin:10px 0 0"><code>total</code> is the full contact count across all pages; <code>total_pages</code> is <code>ceil(total / page_size)</code>. There are more pages while <code>page &lt; total_pages</code>.</p>
     </div>
   </details>
 
@@ -141,7 +159,9 @@ const page = /* html */ `<!doctype html>
   "id": "con_a1b2",
   "email": "ada@example.com",
   "name": "Ada",
-  "plan": "pro"
+  "plan": "pro",
+  "created_at": "2026-07-04T10:00:00Z",
+  "updated_at": "2026-07-04T10:00:00Z"
 }</code></pre>
     </div>
   </details>
