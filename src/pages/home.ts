@@ -5,7 +5,8 @@ export const homePage = /* html */ `<!doctype html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>contactapi, an open-source API to save contacts</title>
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<title>ContactAPI, an open-source API to save contacts</title>
 <meta name="description" content="An open-source API to save contacts with a single POST and manage them with simple CRUD." />
 <style>
   ${baseStyle}
@@ -48,8 +49,9 @@ export const homePage = /* html */ `<!doctype html>
 </head>
 <body>
   <div class="topbar">
-    <h1>contactapi</h1>
+    <h1>ContactAPI</h1>
     <div class="cta">
+      <a class="txt" href="#mcp">MCP</a>
       <a class="txt" href="/llms.txt">llms.txt</a>
       <a class="btn" href="/login">Get API key</a>
     </div>
@@ -181,6 +183,18 @@ export const homePage = /* html */ `<!doctype html>
   <table class="params">
     <tr><td><code>ck_secret_…</code></td><td>Use this on your backend. It has full access to every endpoint above.</td></tr>
     <tr><td><code>ck_pub_…</code></td><td>Use this in a browser. It can only create contacts and is locked to your domains.</td></tr>
+  </table>
+
+  <h2 id="mcp">MCP server</h2>
+  <p class="muted">AI clients — Claude Desktop, claude.ai custom connectors, Cursor, the MCP Inspector — can manage your contacts as tools over a <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server.</p>
+  <pre><code>https://contactapi.dev/mcp</code></pre>
+  <p class="ep-desc" style="margin:14px 0">Auth is <strong>OAuth 2.1 with dynamic client registration</strong>, not an API key: point a client at the URL and it discovers the authorization server, registers itself, and sends you to log in and approve access. Every tool is scoped to the account you log in as.</p>
+  <table class="params">
+    <tr><td><code>list_contacts</code></td><td>List your contacts, newest first. Params: <code>page</code>, <code>page_size</code>.</td></tr>
+    <tr><td><code>get_contact</code></td><td>Fetch one contact. Params: <code>id</code>.</td></tr>
+    <tr><td><code>create_contact</code></td><td>Create or upsert by email. Params: <code>email</code>, <code>fields</code>.</td></tr>
+    <tr><td><code>update_contact</code></td><td>Partial update, merged into existing fields. Params: <code>id</code>, <code>email</code>, <code>fields</code>.</td></tr>
+    <tr><td><code>delete_contact</code></td><td>Delete one contact. Params: <code>id</code>.</td></tr>
   </table>
 
   <footer>Open source · MIT licensed · <a href="https://github.com/Connected-Future/contactapi">GitHub</a></footer>

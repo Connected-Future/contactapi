@@ -5,7 +5,8 @@ export const loginPage = /* html */ `<!doctype html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Log in to contactapi</title>
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<title>Log in to ContactAPI</title>
 <style>
   ${baseStyle}
   body { max-width: 360px; padding-top: 96px; }

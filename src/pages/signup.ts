@@ -5,7 +5,8 @@ export const signupPage = /* html */ `<!doctype html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sign up for contactapi</title>
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<title>Sign up for ContactAPI</title>
 <style>
   ${baseStyle}
   body { max-width: 360px; padding-top: 96px; }
