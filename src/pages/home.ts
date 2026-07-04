@@ -5,7 +5,7 @@ export const homePage = /* html */ `<!doctype html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" href="/favicon.ico?v=2" sizes="any" />
 <title>ContactAPI, an open-source API to save contacts</title>
 <meta name="description" content="An open-source API to save contacts with a single POST and manage them with simple CRUD." />
 <style>
