@@ -1,7 +1,14 @@
 {
-  "name": "hono",
+  "name": "contactapi",
+  "version": "0.1.0",
+  "description": "An open-source API to save contacts — POST an email plus any JSON fields and manage them with simple CRUD.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
+    "dev": "vc dev",
+    "build": "vc build",
+    "deploy": "vc deploy",
+    "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -19,6 +26,5 @@
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.7.1",
     "typescript": "^5.8.3"
-  },
-  "version": "dev"
+  }
 }

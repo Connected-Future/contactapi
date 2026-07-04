@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { and, count, desc, eq, sql } from 'drizzle-orm'
 import { db } from '../db/client.js'
@@ -6,6 +7,21 @@ import { contacts, type Contact } from '../db/schema.js'
 import { requireAuth, requireSecretKey, type AppEnv } from '../middleware/auth.js'
 
 export const contactsRoutes = new Hono<AppEnv>()
+
+// CORS so publishable keys work from the browser. This runs before auth and
+// answers preflight (OPTIONS), which carries no Authorization header — so it
+// can't know the key's domains yet. Origin is opened here; the real allowlist
+// is the per-key domain lock enforced in `requireAuth`. Bearer tokens aren't
+// CORS "credentials" (that's cookies), so `origin: *` is safe and correct here.
+contactsRoutes.use(
+  '*',
+  cors({
+    origin: '*',
+    allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Authorization', 'Content-Type'],
+    maxAge: 86400,
+  }),
+)
 
 // Every contact endpoint is authenticated. (Currently a stub — see TODO.md.)
 contactsRoutes.use('*', requireAuth)

@@ -3,6 +3,7 @@ import { and, count, desc, eq, ilike } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { apiKeys, contacts, type Contact } from '../db/schema.js'
 import { requireSession } from '../middleware/session.js'
+import { rateLimit } from '../middleware/ratelimit.js'
 import { type AppEnv } from '../middleware/auth.js'
 import { mintApiKey } from '../api-keys.js'
 import { decryptKey } from '../db/keycrypto.js'
@@ -34,7 +35,8 @@ dashboardRoutes.get('/keys', async (c) => {
   return c.html(keysPage(c.get('sessionUser').name, rows, createdId))
 })
 
-dashboardRoutes.post('/keys', async (c) => {
+// Minting keys is cheap for us but a nice abuse target — cap it per IP.
+dashboardRoutes.post('/keys', rateLimit({ bucket: 'keys', windowMs: 60_000, max: 10 }), async (c) => {
   const form = await c.req.parseBody()
   const type = form.type === 'publishable' ? 'publishable' : 'secret'
 
