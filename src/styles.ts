@@ -28,6 +28,5 @@ export const baseStyle = /* css */ `
 
 // Shared <head> snippets included on every page.
 export const analyticsScript = /* html */ `
-  <!-- 100% privacy-first analytics -->
-  <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+  <script defer src="https://yourtraffic.dev/script.js"></script>
 `
