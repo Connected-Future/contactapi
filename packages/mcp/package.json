@@ -1,0 +1,35 @@
+{
+  "name": "@kozmos-tech/contactapi",
+  "version": "0.1.1",
+  "description": "An open-source API for collecting and managing contacts and signups.",
+  "mcpName": "io.github.kozmos-tech/contactapi",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "contactapi-mcp": "bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "README.md"
+  ],
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "contacts",
+    "crm",
+    "contactapi"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kozmos-tech/contactapi.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://contactapi.dev",
+  "bugs": "https://github.com/kozmos-tech/contactapi/issues",
+  "dependencies": {
+    "mcp-remote": "^0.1.38"
+  }
+}
