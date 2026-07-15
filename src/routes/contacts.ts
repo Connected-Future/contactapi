@@ -54,7 +54,7 @@ contactsRoutes.post('/', async (c) => {
 // ── GET /v1/contacts — list, newest first, paginated ─────────────────────────
 contactsRoutes.get('/', requireSecretKey, async (c) => {
   const page = clampInt(c.req.query('page'), 1, 1, Number.MAX_SAFE_INTEGER)
-  const pageSize = clampInt(c.req.query('page_size'), 20, 1, 100)
+  const pageSize = clampInt(c.req.query('page_size'), 50, 1, 100)
 
   const { rows, total } = await listContacts(c.get('userId'), { page, pageSize })
 
